@@ -1,11 +1,5 @@
-// SPDX-FileCopyrightText: 2026 The Pion community <https://pion.ly>
-// SPDX-License-Identifier: MIT
-
 package webrtc
 
-import "fmt"
-
-// ICECandidatePair represents an ICE Candidate pair.
 type ICECandidatePair struct {
 	statsID string
 	Local   *ICECandidate
@@ -13,25 +7,13 @@ type ICECandidatePair struct {
 }
 
 func newICECandidatePairStatsID(localID, remoteID string) string {
-	return fmt.Sprintf("%s-%s", localID, remoteID)
+	_ = "STUB: not implemented"
+	return ""
 }
 
-func (p *ICECandidatePair) String() string {
-	if p == nil {
-		return "<nil>"
-	}
+func (p *ICECandidatePair) String() string { _ = "STUB: not implemented"; return "" }
 
-	return fmt.Sprintf("(local) %s <-> (remote) %s", p.Local, p.Remote)
-}
-
-// NewICECandidatePair returns an initialized *ICECandidatePair
-// for the given pair of ICECandidate instances.
 func NewICECandidatePair(local, remote *ICECandidate) *ICECandidatePair {
-	statsID := newICECandidatePairStatsID(local.statsID, remote.statsID)
-
-	return &ICECandidatePair{
-		statsID: statsID,
-		Local:   local,
-		Remote:  remote,
-	}
+	_ = "STUB: not implemented"
+	return nil
 }

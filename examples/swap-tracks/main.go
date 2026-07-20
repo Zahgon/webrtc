@@ -1,21 +1,12 @@
-// SPDX-FileCopyrightText: 2026 The Pion community <https://pion.ly>
-// SPDX-License-Identifier: MIT
-
 //go:build !js
 
-// swap-tracks demonstrates how to swap multiple incoming tracks on a single outgoing track.
 package main
 
 import (
-	"bufio"
 	"context"
-	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"os"
-	"strings"
 	"time"
 
 	"github.com/pion/rtcp"
@@ -23,11 +14,8 @@ import (
 	"github.com/pion/webrtc/v4"
 )
 
-// nolint: cyclop
-func main() { // nolint:gocognit
-	// Everything below is the Pion WebRTC API! Thanks for using it ❤️.
+func main() {
 
-	// Prepare the configuration
 	config := webrtc.Configuration{
 		ICEServers: []webrtc.ICEServer{
 			{
@@ -35,7 +23,7 @@ func main() { // nolint:gocognit
 			},
 		},
 	}
-	// Create a new RTCPeerConnection
+
 	peerConnection, err := webrtc.NewPeerConnection(config)
 	if err != nil {
 		panic(err)
@@ -46,7 +34,6 @@ func main() { // nolint:gocognit
 		}
 	}()
 
-	// Create Track that we send video back to browser on
 	outputTrack, err := webrtc.NewTrackLocalStaticRTP(webrtc.RTPCodecCapability{
 		MimeType: webrtc.MimeTypeVP8,
 	}, "video", "pion")
@@ -54,15 +41,11 @@ func main() { // nolint:gocognit
 		panic(err)
 	}
 
-	// Add this newly created track to the PeerConnection
 	rtpSender, err := peerConnection.AddTrack(outputTrack)
 	if err != nil {
 		panic(err)
 	}
 
-	// Read incoming RTCP packets
-	// Before these packets are returned they are processed by interceptors. For things
-	// like NACK this needs to be called.
 	go func() {
 		rtcpBuf := make([]byte, 1500)
 		for {
@@ -72,42 +55,35 @@ func main() { // nolint:gocognit
 		}
 	}()
 
-	// Wait for the offer to be pasted
 	offer := webrtc.SessionDescription{}
 	decode(readUntilNewline(), &offer)
 
-	// Set the remote SessionDescription
 	err = peerConnection.SetRemoteDescription(offer)
 	if err != nil {
 		panic(err)
 	}
 
-	// Which track is currently being handled
 	currTrack := 0
-	// The total number of tracks
+
 	trackCount := 0
-	// The channel of packets with a bit of buffer
+
 	packets := make(chan *rtp.Packet, 60)
 
-	// Set a handler for when a new remote track starts
 	peerConnection.OnTrack(func(track *webrtc.TrackRemote, receiver *webrtc.RTPReceiver) { //nolint: revive
 		fmt.Printf("Track has started, of type %d: %s \n", track.PayloadType(), track.Codec().MimeType)
 		trackNum := trackCount
 		trackCount++
-		// The last timestamp so that we can change the packet to only be the delta
+
 		var lastTimestamp uint32
 
-		// Whether this track is the one currently sending to the channel (on change
-		// of this we send a PLI to have the entire picture updated)
 		var isCurrTrack bool
 		for {
-			// Read RTP packets being sent to Pion
+
 			rtp, _, readErr := track.ReadRTP()
 			if readErr != nil {
 				panic(readErr)
 			}
 
-			// Change the timestamp to only be the delta
 			oldTimestamp := rtp.Timestamp
 			if lastTimestamp == 0 {
 				rtp.Timestamp = 0
@@ -116,9 +92,8 @@ func main() { // nolint:gocognit
 			}
 			lastTimestamp = oldTimestamp
 
-			// Check if this is the current track
 			if currTrack == trackNum { //nolint:nestif
-				// If just switched to this track, send PLI to get picture refresh
+
 				if !isCurrTrack {
 					isCurrTrack = true
 					if track.Kind() == webrtc.RTPCodecTypeVideo {
@@ -138,62 +113,49 @@ func main() { // nolint:gocognit
 
 	ctx, done := context.WithCancel(context.Background())
 
-	// Set the handler for Peer connection state
-	// This will notify you when the peer has connected/disconnected
 	peerConnection.OnConnectionStateChange(func(state webrtc.PeerConnectionState) {
 		fmt.Printf("Peer Connection State has changed: %s\n", state.String())
 
 		if state == webrtc.PeerConnectionStateFailed {
-			// Wait until PeerConnection has had no network activity for 30 seconds or another failure.
-			// It may be reconnected using an ICE Restart.
-			// Use webrtc.PeerConnectionStateDisconnected if you are interested in detecting faster timeout.
-			// Note that the PeerConnection may come back from PeerConnectionStateDisconnected.
+
 			done()
 		}
 
 		if state == webrtc.PeerConnectionStateClosed {
-			// PeerConnection was explicitly closed. This usually happens from a DTLS CloseNotify
+
 			done()
 		}
 	})
 
-	// Create an answer
 	answer, err := peerConnection.CreateAnswer(nil)
 	if err != nil {
 		panic(err)
 	}
 
-	// Create channel that is blocked until ICE Gathering is complete
 	gatherComplete := webrtc.GatheringCompletePromise(peerConnection)
 
-	// Sets the LocalDescription, and starts our UDP listeners
 	err = peerConnection.SetLocalDescription(answer)
 	if err != nil {
 		panic(err)
 	}
 
-	// Block until ICE Gathering is complete, disabling trickle ICE
-	// we do this because we only can exchange one signaling message
-	// in a production application you should exchange ICE Candidates via OnICECandidate
 	<-gatherComplete
 
 	fmt.Println(encode(peerConnection.LocalDescription()))
 
-	// Asynchronously take all packets in the channel and write them out to our
-	// track
 	go func() {
 		var currTimestamp uint32
 		for i := uint16(0); ; i++ {
 			packet := <-packets
-			// Timestamp on the packet is really a diff, so add it to current
+
 			currTimestamp += packet.Timestamp
 			packet.Timestamp = currTimestamp
-			// Keep an increasing sequence number
+
 			packet.SequenceNumber = i
-			// Write out the packet, ignoring closed pipe if nobody is listening
+
 			if err := outputTrack.WriteRTP(packet); err != nil {
 				if errors.Is(err, io.ErrClosedPipe) {
-					// The peerConnection has been closed.
+
 					return
 				}
 
@@ -202,7 +164,6 @@ func main() { // nolint:gocognit
 		}
 	}()
 
-	// Wait for connection, then rotate the track every 5s
 	fmt.Printf("Waiting for connection\n")
 	for {
 		select {
@@ -211,7 +172,6 @@ func main() { // nolint:gocognit
 		default:
 		}
 
-		// We haven't gotten any tracks yet
 		if trackCount == 0 {
 			continue
 		}
@@ -227,45 +187,8 @@ func main() { // nolint:gocognit
 	}
 }
 
-// Read from stdin until we get a newline.
-func readUntilNewline() (in string) {
-	var err error
+func readUntilNewline() (in string) { _ = "STUB: not implemented"; return "" }
 
-	r := bufio.NewReader(os.Stdin)
-	for {
-		in, err = r.ReadString('\n')
-		if err != nil && !errors.Is(err, io.EOF) {
-			panic(err)
-		}
+func encode(obj *webrtc.SessionDescription) string { _ = "STUB: not implemented"; return "" }
 
-		if in = strings.TrimSpace(in); len(in) > 0 {
-			break
-		}
-	}
-
-	fmt.Println("")
-
-	return
-}
-
-// JSON encode + base64 a SessionDescription.
-func encode(obj *webrtc.SessionDescription) string {
-	b, err := json.Marshal(obj)
-	if err != nil {
-		panic(err)
-	}
-
-	return base64.StdEncoding.EncodeToString(b)
-}
-
-// Decode a base64 and unmarshal JSON into a SessionDescription.
-func decode(in string, obj *webrtc.SessionDescription) {
-	b, err := base64.StdEncoding.DecodeString(in)
-	if err != nil {
-		panic(err)
-	}
-
-	if err = json.Unmarshal(b, obj); err != nil {
-		panic(err)
-	}
-}
+func decode(in string, obj *webrtc.SessionDescription) { _ = "STUB: not implemented"; return }

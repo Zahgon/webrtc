@@ -1,9 +1,5 @@
-// SPDX-FileCopyrightText: 2026 The Pion community <https://pion.ly>
-// SPDX-License-Identifier: MIT
-
 package webrtc
 
-// DataChannelParameters describes the configuration of the DataChannel.
 type DataChannelParameters struct {
 	Label             string  `json:"label"`
 	Protocol          string  `json:"protocol"`

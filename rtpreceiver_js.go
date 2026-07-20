@@ -1,6 +1,3 @@
-// SPDX-FileCopyrightText: 2026 The Pion community <https://pion.ly>
-// SPDX-License-Identifier: MIT
-
 //go:build js && wasm
 // +build js,wasm
 
@@ -8,13 +5,8 @@ package webrtc
 
 import "syscall/js"
 
-// RTPReceiver allows an application to inspect the receipt of a TrackRemote
 type RTPReceiver struct {
-	// Pointer to the underlying JavaScript RTCRTPReceiver object.
 	underlying js.Value
 }
 
-// JSValue returns the underlying RTCRtpReceiver
-func (r *RTPReceiver) JSValue() js.Value {
-	return r.underlying
-}
+func (r *RTPReceiver) JSValue() js.Value { _ = "STUB: not implemented"; return *new(js.Value) }
