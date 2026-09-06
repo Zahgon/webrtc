@@ -1,27 +1,17 @@
-// SPDX-FileCopyrightText: 2026 The Pion community <https://pion.ly>
-// SPDX-License-Identifier: MIT
-
 //go:build js && wasm
 // +build js,wasm
 
 package main
 
 import (
-	"bufio"
-	"encoding/base64"
-	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
-	"os"
-	"strings"
 	"syscall/js"
 
 	"github.com/pion/webrtc/v4"
 )
 
 func main() {
-	// Configure and create a new PeerConnection.
+
 	config := webrtc.Configuration{
 		ICEServers: []webrtc.ICEServer{
 			{
@@ -34,7 +24,6 @@ func main() {
 		handleError(err)
 	}
 
-	// Create DataChannel.
 	sendChannel, err := pc.CreateDataChannel("foo", nil)
 	if err != nil {
 		handleError(err)
@@ -60,7 +49,6 @@ func main() {
 		log(fmt.Sprintf("Message from DataChannel %s payload %s", sendChannel.Label(), string(msg.Data)))
 	})
 
-	// Create offer
 	offer, err := pc.CreateOffer(nil)
 	if err != nil {
 		handleError(err)
@@ -69,7 +57,6 @@ func main() {
 		handleError(err)
 	}
 
-	// Add handlers for setting up the connection.
 	pc.OnICEConnectionStateChange(func(state webrtc.ICEConnectionState) {
 		log(fmt.Sprint(state))
 	})
@@ -81,7 +68,6 @@ func main() {
 		}
 	})
 
-	// Set up global callbacks which will be triggered on button clicks.
 	js.Global().Set("sendMessage", js.FuncOf(func(_ js.Value, _ []js.Value) any {
 		go func() {
 			el := getElementByID("message")
@@ -141,62 +127,17 @@ func main() {
 		return js.Undefined()
 	}))
 
-	// Stay alive
 	select {}
 }
 
-func log(msg string) {
-	el := getElementByID("logs")
-	el.Set("innerHTML", el.Get("innerHTML").String()+msg+"<br>")
-}
+func log(msg string) { _ = "STUB: not implemented"; return }
 
-func handleError(err error) {
-	log("Unexpected error. Check console.")
-	panic(err)
-}
+func handleError(err error) { _ = "STUB: not implemented"; return }
 
-func getElementByID(id string) js.Value {
-	return js.Global().Get("document").Call("getElementById", id)
-}
+func getElementByID(id string) js.Value { _ = "STUB: not implemented"; return *new(js.Value) }
 
-// Read from stdin until we get a newline
-func readUntilNewline() (in string) {
-	var err error
+func readUntilNewline() (in string) { _ = "STUB: not implemented"; return "" }
 
-	r := bufio.NewReader(os.Stdin)
-	for {
-		in, err = r.ReadString('\n')
-		if err != nil && !errors.Is(err, io.EOF) {
-			panic(err)
-		}
+func encode(obj *webrtc.SessionDescription) string { _ = "STUB: not implemented"; return "" }
 
-		if in = strings.TrimSpace(in); len(in) > 0 {
-			break
-		}
-	}
-
-	fmt.Println("")
-	return
-}
-
-// JSON encode + base64 a SessionDescription
-func encode(obj *webrtc.SessionDescription) string {
-	b, err := json.Marshal(obj)
-	if err != nil {
-		panic(err)
-	}
-
-	return base64.StdEncoding.EncodeToString(b)
-}
-
-// Decode a base64 and unmarshal JSON into a SessionDescription
-func decode(in string, obj *webrtc.SessionDescription) {
-	b, err := base64.StdEncoding.DecodeString(in)
-	if err != nil {
-		panic(err)
-	}
-
-	if err = json.Unmarshal(b, obj); err != nil {
-		panic(err)
-	}
-}
+func decode(in string, obj *webrtc.SessionDescription) { _ = "STUB: not implemented"; return }

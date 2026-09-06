@@ -1,6 +1,3 @@
-// SPDX-FileCopyrightText: 2026 The Pion community <https://pion.ly>
-// SPDX-License-Identifier: MIT
-
 package webrtc
 
 import (
@@ -8,174 +5,98 @@ import (
 )
 
 var (
-	// ErrUnknownType indicates an error with Unknown info.
 	ErrUnknownType = errors.New("unknown")
 
-	// ErrConnectionClosed indicates an operation executed after connection
-	// has already been closed.
 	ErrConnectionClosed = errors.New("connection closed")
 
-	// ErrDataChannelNotOpen indicates an operation executed when the data
-	// channel is not (yet) open.
 	ErrDataChannelNotOpen = errors.New("data channel not open")
 
-	// ErrCertificateExpired indicates that an x509 certificate has expired.
 	ErrCertificateExpired = errors.New("x509Cert expired")
 
-	// ErrNoTurnCredentials indicates that a TURN server URL was provided
-	// without required credentials.
 	ErrNoTurnCredentials = errors.New("turn server credentials required")
 
-	// ErrTurnCredentials indicates that provided TURN credentials are partial
-	// or malformed.
 	ErrTurnCredentials = errors.New("invalid turn server credentials")
 
-	// ErrExistingTrack indicates that a track already exists.
 	ErrExistingTrack = errors.New("track already exists")
 
-	// ErrPrivateKeyType indicates that a particular private key encryption
-	// chosen to generate a certificate is not supported.
 	ErrPrivateKeyType = errors.New("private key type not supported")
 
-	// ErrModifyingPeerIdentity indicates that an attempt to modify
-	// PeerIdentity was made after PeerConnection has been initialized.
 	ErrModifyingPeerIdentity = errors.New("peerIdentity cannot be modified")
 
-	// ErrModifyingCertificates indicates that an attempt to modify
-	// Certificates was made after PeerConnection has been initialized.
 	ErrModifyingCertificates = errors.New("certificates cannot be modified")
 
-	// ErrModifyingBundlePolicy indicates that an attempt to modify
-	// BundlePolicy was made after PeerConnection has been initialized.
 	ErrModifyingBundlePolicy = errors.New("bundle policy cannot be modified")
 
-	// ErrModifyingRTCPMuxPolicy indicates that an attempt to modify
-	// RTCPMuxPolicy was made after PeerConnection has been initialized.
 	ErrModifyingRTCPMuxPolicy = errors.New("rtcp mux policy cannot be modified")
 
-	// ErrModifyingICECandidatePoolSize indicates that an attempt to modify
-	// ICECandidatePoolSize was made after PeerConnection has been initialized.
 	ErrModifyingICECandidatePoolSize = errors.New("ice candidate pool size cannot be modified")
 
-	// ErrStringSizeLimit indicates that the character size limit of string is
-	// exceeded. The limit is hardcoded to 65535 according to specifications.
 	ErrStringSizeLimit = errors.New("data channel label exceeds size limit")
 
-	// ErrMaxDataChannelID indicates that the maximum number ID that could be
-	// specified for a data channel has been exceeded.
 	ErrMaxDataChannelID = errors.New("maximum number ID for datachannel specified")
 
-	// ErrNegotiatedWithoutID indicates that an attempt to create a data channel
-	// was made while setting the negotiated option to true without providing
-	// the negotiated channel ID.
 	ErrNegotiatedWithoutID = errors.New("negotiated set without channel id")
 
-	// ErrRetransmitsOrPacketLifeTime indicates that an attempt to create a data
-	// channel was made with both options MaxPacketLifeTime and MaxRetransmits
-	// set together. Such configuration is not supported by the specification
-	// and is mutually exclusive.
 	ErrRetransmitsOrPacketLifeTime = errors.New("both MaxPacketLifeTime and MaxRetransmits was set")
 
-	// ErrCodecNotFound is returned when a codec search to the Media Engine fails.
 	ErrCodecNotFound = errors.New("codec not found")
 
-	// ErrNoRemoteDescription indicates that an operation was rejected because
-	// the remote description is not set.
 	ErrNoRemoteDescription = errors.New("remote description is not set")
 
-	// ErrIncorrectSDPSemantics indicates that the PeerConnection was configured to
-	// generate SDP Answers with different SDP Semantics than the received Offer.
 	ErrIncorrectSDPSemantics = errors.New("remote SessionDescription semantics does not match configuration")
 
-	// ErrIncorrectSignalingState indicates that the signaling state of PeerConnection is not correct.
 	ErrIncorrectSignalingState = errors.New("operation can not be run in current signaling state")
 
-	// ErrProtocolTooLarge indicates that value given for a DataChannelInit protocol is
-	// longer then 65535 bytes.
 	ErrProtocolTooLarge = errors.New("protocol is larger then 65535 bytes")
 
-	// ErrSenderNotCreatedByConnection indicates RemoveTrack was called with a RtpSender not created
-	// by this PeerConnection.
 	ErrSenderNotCreatedByConnection = errors.New("RtpSender not created by this PeerConnection")
 
-	// ErrSessionDescriptionNoFingerprint indicates SetRemoteDescription was called with a SessionDescription that has no
-	// fingerprint.
 	ErrSessionDescriptionNoFingerprint = errors.New("SetRemoteDescription called with no fingerprint")
 
-	// ErrSessionDescriptionInvalidFingerprint indicates SetRemoteDescription was called with a SessionDescription that
-	// has an invalid fingerprint.
 	ErrSessionDescriptionInvalidFingerprint = errors.New("SetRemoteDescription called with an invalid fingerprint")
 
-	// ErrSessionDescriptionConflictingFingerprints indicates SetRemoteDescription was called with a SessionDescription
-	// that has an conflicting fingerprints.
 	ErrSessionDescriptionConflictingFingerprints = errors.New(
 		"SetRemoteDescription called with multiple conflicting fingerprint",
 	)
 
-	// ErrSessionDescriptionMissingIceUfrag indicates SetRemoteDescription was called with a SessionDescription that
-	// is missing an ice-ufrag value.
 	ErrSessionDescriptionMissingIceUfrag = errors.New("SetRemoteDescription called with no ice-ufrag")
 
-	// ErrSessionDescriptionMissingIcePwd indicates SetRemoteDescription was called with a SessionDescription that
-	// is missing an ice-pwd value.
 	ErrSessionDescriptionMissingIcePwd = errors.New("SetRemoteDescription called with no ice-pwd")
 
-	// ErrSessionDescriptionConflictingIceUfrag  indicates SetRemoteDescription was called with a SessionDescription
-	// that contains multiple conflicting ice-ufrag values.
 	ErrSessionDescriptionConflictingIceUfrag = errors.New(
 		"SetRemoteDescription called with multiple conflicting ice-ufrag values",
 	)
 
-	// ErrSessionDescriptionConflictingIcePwd indicates SetRemoteDescription was called with a SessionDescription
-	// that contains multiple conflicting ice-pwd values.
 	ErrSessionDescriptionConflictingIcePwd = errors.New(
 		"SetRemoteDescription called with multiple conflicting ice-pwd values",
 	)
 
-	// ErrNoSRTPProtectionProfile indicates that the DTLS handshake completed and no SRTP Protection Profile was chosen.
 	ErrNoSRTPProtectionProfile = errors.New("DTLS Handshake completed and no SRTP Protection Profile was chosen")
 
-	// ErrFailedToGenerateCertificateFingerprint indicates that we failed to generate the fingerprint
-	// used for comparing certificates.
 	ErrFailedToGenerateCertificateFingerprint = errors.New("failed to generate certificate fingerprint")
 
-	// ErrNoCodecsAvailable indicates that operation isn't possible because the MediaEngine has no codecs available.
 	ErrNoCodecsAvailable = errors.New("operation failed no codecs are available")
 
-	// ErrUnsupportedCodec indicates the remote peer doesn't support the requested codec.
 	ErrUnsupportedCodec = errors.New("unable to start track, codec is not supported by remote")
 
-	// ErrSenderWithNoCodecs indicates that a RTPSender was created without any codecs. To send media the MediaEngine
-	//  needs at least one configured codec.
 	ErrSenderWithNoCodecs = errors.New("unable to populate media section, RTPSender created with no codecs")
 
-	// ErrCodecAlreadyRegistered indicates that a codec has already been registered for the same payload type.
 	ErrCodecAlreadyRegistered = errors.New("codec already registered for same payload type")
 
-	// ErrRTPSenderNewTrackHasIncorrectKind indicates that the new track is of a different kind than the previous/original.
 	ErrRTPSenderNewTrackHasIncorrectKind = errors.New("new track must be of the same kind as previous")
 
-	// ErrRTPSenderNewTrackHasIncorrectEnvelope indicates that the new track has a different envelope
-	//  than the previous/original.
 	ErrRTPSenderNewTrackHasIncorrectEnvelope = errors.New("new track must have the same envelope as previous")
 
-	// ErrUnbindFailed indicates that a TrackLocal was not able to be unbind.
 	ErrUnbindFailed = errors.New("failed to unbind TrackLocal from PeerConnection")
 
-	// ErrNoPayloaderForCodec indicates that the requested codec does not have a payloader.
 	ErrNoPayloaderForCodec = errors.New("the requested codec does not have a payloader")
 
-	// ErrRegisterHeaderExtensionInvalidDirection indicates that a extension was
-	// registered with a direction besides `sendonly` or `recvonly`.
 	ErrRegisterHeaderExtensionInvalidDirection = errors.New(
 		"a header extension must be registered as 'recvonly', 'sendonly' or both",
 	)
 
-	// ErrSimulcastProbeOverflow indicates that too many Simulcast probe streams are in flight
-	// and the requested SSRC was ignored.
 	ErrSimulcastProbeOverflow = errors.New("simulcast probe limit has been reached, new SSRC has been discarded")
 
-	// ErrSDPUnmarshalling indicates that the SDP could not be unmarshalled.
 	ErrSDPUnmarshalling = errors.New("failed to unmarshal SDP")
 
 	errDetachNotEnabled                 = errors.New("enable detaching by calling webrtc.DetachDataChannels()")
@@ -288,7 +209,7 @@ var (
 
 	errCertificatePEMMultipleCert = errors.New("failed parsing certificate, more than 1 CERTIFICATE block in pems")
 	errCertificatePEMMultiplePriv = errors.New("failed parsing certificate, more than 1 PRIVATE KEY block in pems")
-	errCertificatePEMMissing      = errors.New("failed parsing certificate, pems must contain both a CERTIFICATE block and a PRIVATE KEY block") // nolint: lll
+	errCertificatePEMMissing      = errors.New("failed parsing certificate, pems must contain both a CERTIFICATE block and a PRIVATE KEY block")
 
 	errRTPTooShort = errors.New("not long enough to be a RTP Packet")
 

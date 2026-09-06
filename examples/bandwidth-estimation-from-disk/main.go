@@ -1,20 +1,12 @@
-// SPDX-FileCopyrightText: 2026 The Pion community <https://pion.ly>
-// SPDX-License-Identifier: MIT
-
 //go:build !js
 
-// bandwidth-estimation-from-disk demonstrates how to use Pion's Bandwidth Estimation APIs.
 package main
 
 import (
-	"bufio"
-	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/pion/interceptor"
@@ -62,11 +54,6 @@ func main() { //nolint:gocognit,cyclop,maintidx
 		panic(err)
 	}
 
-	// Create a Congestion Controller. This analyzes inbound and outbound data and provides
-	// suggestions on how much we should be sending.
-	//
-	// Passing `nil` means we use the default Estimation Algorithm which is Google Congestion Control.
-	// You can use the other ones that Pion provides, or write your own!
 	congestionController, err := cc.NewInterceptor(func() (cc.BandwidthEstimator, error) {
 		return gcc.NewSendSideBWE(gcc.SendSideBWEInitialBitrate(lowBitrate))
 	})
@@ -88,7 +75,6 @@ func main() { //nolint:gocognit,cyclop,maintidx
 		panic(err)
 	}
 
-	// Create a new RTCPeerConnection
 	peerConnection, err := webrtc.NewAPI(
 		webrtc.WithInterceptorRegistry(interceptorRegistry), webrtc.WithMediaEngine(mediaEngine),
 	).NewPeerConnection(webrtc.Configuration{
@@ -107,10 +93,8 @@ func main() { //nolint:gocognit,cyclop,maintidx
 		}
 	}()
 
-	// Wait until our Bandwidth Estimator has been created
 	estimator := <-estimatorChan
 
-	// Create a video track
 	videoTrack, err := webrtc.NewTrackLocalStaticSample(
 		webrtc.RTPCodecCapability{MimeType: webrtc.MimeTypeVP8}, "video", "pion",
 	)
@@ -123,9 +107,6 @@ func main() { //nolint:gocognit,cyclop,maintidx
 		panic(err)
 	}
 
-	// Read incoming RTCP packets
-	// Before these packets are returned they are processed by interceptors. For things
-	// like NACK this needs to be called.
 	go func() {
 		rtcpBuf := make([]byte, 1500)
 		for {
@@ -135,50 +116,36 @@ func main() { //nolint:gocognit,cyclop,maintidx
 		}
 	}()
 
-	// Set the handler for ICE connection state
-	// This will notify you when the peer has connected/disconnected
 	peerConnection.OnICEConnectionStateChange(func(connectionState webrtc.ICEConnectionState) {
 		fmt.Printf("Connection State has changed %s \n", connectionState.String())
 	})
 
-	// Set the handler for Peer connection state
-	// This will notify you when the peer has connected/disconnected
 	peerConnection.OnConnectionStateChange(func(state webrtc.PeerConnectionState) {
 		fmt.Printf("Peer Connection State has changed: %s\n", state.String())
 	})
 
-	// Wait for the offer to be pasted
 	offer := webrtc.SessionDescription{}
 	decode(readUntilNewline(), &offer)
 
-	// Set the remote SessionDescription
 	if err = peerConnection.SetRemoteDescription(offer); err != nil {
 		panic(err)
 	}
 
-	// Create answer
 	answer, err := peerConnection.CreateAnswer(nil)
 	if err != nil {
 		panic(err)
 	}
 
-	// Create channel that is blocked until ICE Gathering is complete
 	gatherComplete := webrtc.GatheringCompletePromise(peerConnection)
 
-	// Sets the LocalDescription, and starts our UDP listeners
 	if err = peerConnection.SetLocalDescription(answer); err != nil {
 		panic(err)
 	}
 
-	// Block until ICE Gathering is complete, disabling trickle ICE
-	// we do this because we only can exchange one signaling message
-	// in a production application you should exchange ICE Candidates via OnICECandidate
 	<-gatherComplete
 
-	// Output the answer in base64 so we can paste it in browser
 	fmt.Println(encode(peerConnection.LocalDescription()))
 
-	// Open a IVF file and start reading using our IVFReader
 	file, err := os.Open(qualityLevels[currentQuality].fileName)
 	if err != nil {
 		panic(err)
@@ -189,12 +156,6 @@ func main() { //nolint:gocognit,cyclop,maintidx
 		panic(err)
 	}
 
-	// Send our video file frame at a time. Pace our sending so we send it at the same speed it should be played back as.
-	// This isn't required since the video is timestamped, but we will such much higher loss if we send all at once.
-	//
-	// It is important to use a time.Ticker instead of time.Sleep because
-	// * avoids accumulating skew, just calling time.Sleep didn't compensate for the time spent parsing the data
-	// * works around latency issues with Sleep (see https://github.com/golang/go/issues/44343)
 	ticker := time.NewTicker(
 		time.Millisecond * time.Duration((float32(header.TimebaseNumerator)/float32(header.TimebaseDenominator))*1000),
 	)
@@ -224,90 +185,38 @@ func main() { //nolint:gocognit,cyclop,maintidx
 	for ; true; <-ticker.C {
 		targetBitrate := estimator.GetTargetBitrate()
 		switch {
-		// If current quality level is below target bitrate drop to level below
+
 		case currentQuality != 0 && targetBitrate < qualityLevels[currentQuality].bitrate:
 			switchQualityLevel(currentQuality - 1)
 
-			// If next quality level is above target bitrate move to next level
 		case len(qualityLevels) > (currentQuality+1) && targetBitrate > qualityLevels[currentQuality+1].bitrate:
 			switchQualityLevel(currentQuality + 1)
 
-		// Adjust outbound bandwidth for probing
 		default:
 			frame, frameHeader, err = ivf.ParseNextFrame()
 		}
 
 		switch {
-		// If we have reached the end of the file start again
+
 		case errors.Is(err, io.EOF):
 			ivf.ResetReader(setReaderFile(qualityLevels[currentQuality].fileName))
 
-		// No error write the video frame
 		case err == nil:
 			currentTimestamp = frameHeader.Timestamp
 			if err = videoTrack.WriteSample(media.Sample{Data: frame, Duration: time.Second}); err != nil {
 				panic(err)
 			}
-		// Error besides io.EOF that we dont know how to handle
+
 		default:
 			panic(err)
 		}
 	}
 }
 
-func setReaderFile(filename string) func(_ int64) io.Reader {
-	return func(_ int64) io.Reader {
-		file, err := os.Open(filename) // nolint
-		if err != nil {
-			panic(err)
-		}
-		if _, err = file.Seek(ivfHeaderSize, io.SeekStart); err != nil {
-			panic(err)
-		}
+func setReaderFile(filename string) func(_ int64) io.Reader { _ = "STUB: not implemented"; return nil }
 
-		return file
-	}
-}
+func readUntilNewline() (in string) { _ = "STUB: not implemented"; return "" }
 
-// Read from stdin until we get a newline.
-func readUntilNewline() (in string) {
-	var err error
+func encode(obj *webrtc.SessionDescription) string { _ = "STUB: not implemented"; return "" }
 
-	r := bufio.NewReader(os.Stdin)
-	for {
-		in, err = r.ReadString('\n')
-		if err != nil && !errors.Is(err, io.EOF) {
-			panic(err)
-		}
-
-		if in = strings.TrimSpace(in); len(in) > 0 {
-			break
-		}
-	}
-
-	fmt.Println("")
-
-	return
-}
-
-// JSON encode + base64 a SessionDescription.
-func encode(obj *webrtc.SessionDescription) string {
-	b, err := json.Marshal(obj)
-	if err != nil {
-		panic(err)
-	}
-
-	return base64.StdEncoding.EncodeToString(b)
-}
-
-// Decode a base64 and unmarshal JSON into a SessionDescription.
-func decode(in string, obj *webrtc.SessionDescription) {
-	b, err := base64.StdEncoding.DecodeString(in)
-	if err != nil {
-		panic(err)
-	}
-
-	if err = json.Unmarshal(b, obj); err != nil {
-		panic(err)
-	}
-}
+func decode(in string, obj *webrtc.SessionDescription) { _ = "STUB: not implemented"; return }

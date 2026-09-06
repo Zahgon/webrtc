@@ -1,6 +1,3 @@
-// SPDX-FileCopyrightText: 2026 The Pion community <https://pion.ly>
-// SPDX-License-Identifier: MIT
-
 //go:build js && wasm
 // +build js,wasm
 
@@ -8,31 +5,15 @@ package webrtc
 
 import "syscall/js"
 
-// SCTPTransport provides details about the SCTP transport.
 type SCTPTransport struct {
-	// Pointer to the underlying JavaScript SCTPTransport object.
 	underlying js.Value
 }
 
-// JSValue returns the underlying RTCSctpTransport
-func (r *SCTPTransport) JSValue() js.Value {
-	return r.underlying
-}
+func (r *SCTPTransport) JSValue() js.Value { _ = "STUB: not implemented"; return *new(js.Value) }
 
-// Transport returns the DTLSTransport instance the SCTPTransport is sending over.
-func (r *SCTPTransport) Transport() *DTLSTransport {
-	underlying := r.underlying.Get("transport")
-	if underlying.IsNull() || underlying.IsUndefined() {
-		return nil
-	}
+func (r *SCTPTransport) Transport() *DTLSTransport { _ = "STUB: not implemented"; return nil }
 
-	return &DTLSTransport{
-		underlying: underlying,
-	}
-}
-
-// Metadata returns negotiated SCTP association metadata. The ok return value is
-// always false in the js/wasm build because browsers do not expose this metadata.
 func (r *SCTPTransport) Metadata() (SCTPTransportMetadata, bool) {
-	return SCTPTransportMetadata{}, false
+	_ = "STUB: not implemented"
+	return *new(SCTPTransportMetadata), false
 }

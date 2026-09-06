@@ -1,6 +1,3 @@
-// SPDX-FileCopyrightText: 2026 The Pion community <https://pion.ly>
-// SPDX-License-Identifier: MIT
-
 //go:build !js
 
 package webrtc
@@ -12,16 +9,13 @@ import (
 	"time"
 
 	"github.com/pion/rtp"
-	"github.com/pion/srtp/v3"
 )
 
-// srtpWriterFuture blocks Read/Write calls until
-// the SRTP Session is available.
 type srtpWriterFuture struct {
 	ssrc           SSRC
 	rtpSender      *RTPSender
-	rtcpReadStream atomic.Value // *srtp.ReadStreamSRTCP
-	rtpWriteStream atomic.Value // *srtp.WriteStreamSRTP
+	rtcpReadStream atomic.Value
+	rtpWriteStream atomic.Value
 	mu             sync.Mutex
 	closed         bool
 }
@@ -76,66 +70,21 @@ func (s *srtpWriterFuture) init(returnWhenNoSRTP bool) error { //nolint:cyclop
 	return nil
 }
 
-func (s *srtpWriterFuture) Close() error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.closed {
-		return nil
-	}
-	s.closed = true
-
-	if value, ok := s.rtcpReadStream.Load().(*srtp.ReadStreamSRTCP); ok {
-		return value.Close()
-	}
-
-	return nil
-}
+func (s *srtpWriterFuture) Close() error { _ = "STUB: not implemented"; return nil }
 
 func (s *srtpWriterFuture) Read(b []byte) (n int, err error) {
-	if value, ok := s.rtcpReadStream.Load().(*srtp.ReadStreamSRTCP); ok {
-		return value.Read(b)
-	}
-
-	if err := s.init(false); err != nil || s.rtcpReadStream.Load() == nil {
-		return 0, err
-	}
-
-	return s.Read(b)
+	_ = "STUB: not implemented"
+	return 0, nil
 }
 
 func (s *srtpWriterFuture) SetReadDeadline(t time.Time) error {
-	if value, ok := s.rtcpReadStream.Load().(*srtp.ReadStreamSRTCP); ok {
-		return value.SetReadDeadline(t)
-	}
-
-	if err := s.init(false); err != nil || s.rtcpReadStream.Load() == nil {
-		return err
-	}
-
-	return s.SetReadDeadline(t)
+	_ = "STUB: not implemented"
+	return nil
 }
 
 func (s *srtpWriterFuture) WriteRTP(header *rtp.Header, payload []byte) (int, error) {
-	if value, ok := s.rtpWriteStream.Load().(*srtp.WriteStreamSRTP); ok {
-		return value.WriteRTP(header, payload)
-	}
-
-	if err := s.init(true); err != nil || s.rtpWriteStream.Load() == nil {
-		return 0, err
-	}
-
-	return s.WriteRTP(header, payload)
+	_ = "STUB: not implemented"
+	return 0, nil
 }
 
-func (s *srtpWriterFuture) Write(b []byte) (int, error) {
-	if value, ok := s.rtpWriteStream.Load().(*srtp.WriteStreamSRTP); ok {
-		return value.Write(b)
-	}
-
-	if err := s.init(true); err != nil || s.rtpWriteStream.Load() == nil {
-		return 0, err
-	}
-
-	return s.Write(b)
-}
+func (s *srtpWriterFuture) Write(b []byte) (int, error) { _ = "STUB: not implemented"; return 0, nil }

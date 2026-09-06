@@ -1,6 +1,3 @@
-// SPDX-FileCopyrightText: 2026 The Pion community <https://pion.ly>
-// SPDX-License-Identifier: MIT
-
 package webrtc
 
 import (
@@ -10,21 +7,12 @@ import (
 	"github.com/pion/logging"
 )
 
-// NewICETCPMux creates a new instance of ice.TCPMuxDefault. It enables use of
-// passive ICE TCP candidates.
 func NewICETCPMux(logger logging.LeveledLogger, listener net.Listener, readBufferSize int) ice.TCPMux {
-	return ice.NewTCPMuxDefault(ice.TCPMuxParams{
-		Listener:       listener,
-		Logger:         logger,
-		ReadBufferSize: readBufferSize,
-	})
+	_ = "STUB: not implemented"
+	return *new(ice.TCPMux)
 }
 
-// NewICEUDPMux creates a new instance of ice.UDPMuxDefault. It allows many PeerConnections to be served
-// by a single UDP Port.
 func NewICEUDPMux(logger logging.LeveledLogger, udpConn net.PacketConn) ice.UDPMux {
-	return ice.NewUDPMuxDefault(ice.UDPMuxParams{
-		UDPConn: udpConn,
-		Logger:  logger,
-	})
+	_ = "STUB: not implemented"
+	return *new(ice.UDPMux)
 }

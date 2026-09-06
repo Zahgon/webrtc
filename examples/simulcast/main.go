@@ -1,31 +1,20 @@
-// SPDX-FileCopyrightText: 2026 The Pion community <https://pion.ly>
-// SPDX-License-Identifier: MIT
-
 //go:build !js
 
-// simulcast demonstrates of how to handle incoming track with multiple simulcast rtp streams and show all them back.
 package main
 
 import (
-	"bufio"
-	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/pion/rtcp"
 	"github.com/pion/webrtc/v4"
 )
 
-// nolint:gocognit, cyclop
 func main() {
-	// Everything below is the Pion WebRTC API! Thanks for using it ❤️.
 
-	// Prepare the configuration
 	config := webrtc.Configuration{
 		ICEServers: []webrtc.ICEServer{
 			{
@@ -34,7 +23,6 @@ func main() {
 		},
 	}
 
-	// Create a new RTCPeerConnection
 	peerConnection, err := webrtc.NewPeerConnection(config)
 	if err != nil {
 		panic(err)
@@ -47,7 +35,6 @@ func main() {
 
 	outputTracks := map[string]*webrtc.TrackLocalStaticRTP{}
 
-	// Create Track that we send video back to browser on
 	outputTrack, err := webrtc.NewTrackLocalStaticRTP(webrtc.RTPCodecCapability{
 		MimeType: webrtc.MimeTypeVP8,
 	}, "video_q", "pion_q")
@@ -79,7 +66,6 @@ func main() {
 		panic(err)
 	}
 
-	// Add this newly created track to the PeerConnection to send back video
 	if _, err = peerConnection.AddTransceiverFromTrack(
 		outputTracks["q"], webrtc.RTPTransceiverInit{Direction: webrtc.RTPTransceiverDirectionSendonly}); err != nil {
 		panic(err)
@@ -97,9 +83,6 @@ func main() {
 		panic(err)
 	}
 
-	// Read incoming RTCP packets
-	// Before these packets are returned they are processed by interceptors. For things
-	// like NACK this needs to be called.
 	processRTCP := func(rtpSender *webrtc.RTPSender) {
 		rtcpBuf := make([]byte, 1500)
 		for {
@@ -112,7 +95,6 @@ func main() {
 		go processRTCP(rtpSender)
 	}
 
-	// Wait for the offer to be pasted
 	offer := webrtc.SessionDescription{}
 	decode(readUntilNewline(), &offer)
 
@@ -120,11 +102,9 @@ func main() {
 		panic(err)
 	}
 
-	// Set a handler for when a new remote track starts
 	peerConnection.OnTrack(func(track *webrtc.TrackRemote, receiver *webrtc.RTPReceiver) { //nolint: revive
 		fmt.Println("Track has started")
 
-		// Start reading from all the streams and sending them to the related output track
 		rid := track.RID()
 		if track.Kind() == webrtc.RTPCodecTypeVideo {
 			go func() {
@@ -141,7 +121,7 @@ func main() {
 			}()
 		}
 		for {
-			// Read RTP packets being sent to Pion
+
 			packet, _, readErr := track.ReadRTP()
 			if readErr != nil {
 				panic(readErr)
@@ -153,93 +133,43 @@ func main() {
 		}
 	})
 
-	// Set the handler for Peer connection state
-	// This will notify you when the peer has connected/disconnected
 	peerConnection.OnConnectionStateChange(func(state webrtc.PeerConnectionState) {
 		fmt.Printf("Peer Connection State has changed: %s\n", state.String())
 
 		if state == webrtc.PeerConnectionStateFailed {
-			// Wait until PeerConnection has had no network activity for 30 seconds or another failure.
-			// It may be reconnected using an ICE Restart.
-			// Use webrtc.PeerConnectionStateDisconnected if you are interested in detecting faster timeout.
-			// Note that the PeerConnection may come back from PeerConnectionStateDisconnected.
+
 			fmt.Println("Peer Connection has gone to failed exiting")
 			os.Exit(0)
 		}
 
 		if state == webrtc.PeerConnectionStateClosed {
-			// PeerConnection was explicitly closed. This usually happens from a DTLS CloseNotify
+
 			fmt.Println("Peer Connection has gone to closed exiting")
 			os.Exit(0)
 		}
 	})
 
-	// Create an answer
 	answer, err := peerConnection.CreateAnswer(nil)
 	if err != nil {
 		panic(err)
 	}
 
-	// Create channel that is blocked until ICE Gathering is complete
 	gatherComplete := webrtc.GatheringCompletePromise(peerConnection)
 
-	// Sets the LocalDescription, and starts our UDP listeners
 	err = peerConnection.SetLocalDescription(answer)
 	if err != nil {
 		panic(err)
 	}
 
-	// Block until ICE Gathering is complete, disabling trickle ICE
-	// we do this because we only can exchange one signaling message
-	// in a production application you should exchange ICE Candidates via OnICECandidate
 	<-gatherComplete
 
-	// Output the answer in base64 so we can paste it in browser
 	fmt.Println(encode(peerConnection.LocalDescription()))
 
-	// Block forever
 	select {}
 }
 
-// Read from stdin until we get a newline.
-func readUntilNewline() (in string) {
-	var err error
+func readUntilNewline() (in string) { _ = "STUB: not implemented"; return "" }
 
-	r := bufio.NewReader(os.Stdin)
-	for {
-		in, err = r.ReadString('\n')
-		if err != nil && !errors.Is(err, io.EOF) {
-			panic(err)
-		}
+func encode(obj *webrtc.SessionDescription) string { _ = "STUB: not implemented"; return "" }
 
-		if in = strings.TrimSpace(in); len(in) > 0 {
-			break
-		}
-	}
-
-	fmt.Println("")
-
-	return
-}
-
-// JSON encode + base64 a SessionDescription.
-func encode(obj *webrtc.SessionDescription) string {
-	b, err := json.Marshal(obj)
-	if err != nil {
-		panic(err)
-	}
-
-	return base64.StdEncoding.EncodeToString(b)
-}
-
-// Decode a base64 and unmarshal JSON into a SessionDescription.
-func decode(in string, obj *webrtc.SessionDescription) {
-	b, err := base64.StdEncoding.DecodeString(in)
-	if err != nil {
-		panic(err)
-	}
-
-	if err = json.Unmarshal(b, obj); err != nil {
-		panic(err)
-	}
-}
+func decode(in string, obj *webrtc.SessionDescription) { _ = "STUB: not implemented"; return }

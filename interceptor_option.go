@@ -1,6 +1,3 @@
-// SPDX-FileCopyrightText: 2026 The Pion community <https://pion.ly>
-// SPDX-License-Identifier: MIT
-
 //go:build !js
 
 package webrtc
@@ -13,7 +10,6 @@ import (
 	"github.com/pion/logging"
 )
 
-// interceptorOptions contains options for configuring interceptors.
 type interceptorOptions struct {
 	loggerFactory logging.LoggerFactory
 
@@ -25,54 +21,39 @@ type interceptorOptions struct {
 	twccOptions           []twcc.Option
 }
 
-// InterceptorOption is a function that configures InterceptorOptions.
 type InterceptorOption func(*interceptorOptions)
 
-// WithInterceptorLoggerFactory sets the logger factory for interceptors.
 func WithInterceptorLoggerFactory(loggerFactory logging.LoggerFactory) InterceptorOption {
-	return func(o *interceptorOptions) {
-		o.loggerFactory = loggerFactory
-	}
+	_ = "STUB: not implemented"
+	return *new(InterceptorOption)
 }
 
-// WithNackGeneratorOptions sets options for the NACK generator interceptor.
 func WithNackGeneratorOptions(opts ...nack.GeneratorOption) InterceptorOption {
-	return func(o *interceptorOptions) {
-		o.nackGeneratorOptions = opts
-	}
+	_ = "STUB: not implemented"
+	return *new(InterceptorOption)
 }
 
-// WithNackResponderOptions sets options for the NACK responder interceptor.
 func WithNackResponderOptions(opts ...nack.ResponderOption) InterceptorOption {
-	return func(o *interceptorOptions) {
-		o.nackResponderOptions = opts
-	}
+	_ = "STUB: not implemented"
+	return *new(InterceptorOption)
 }
 
-// WithReportReceiverOptions sets options for the report receiver interceptor.
 func WithReportReceiverOptions(opts ...report.ReceiverOption) InterceptorOption {
-	return func(o *interceptorOptions) {
-		o.reportReceiverOptions = opts
-	}
+	_ = "STUB: not implemented"
+	return *new(InterceptorOption)
 }
 
-// WithReportSenderOptions sets options for the report sender interceptor.
 func WithReportSenderOptions(opts ...report.SenderOption) InterceptorOption {
-	return func(o *interceptorOptions) {
-		o.reportSenderOptions = opts
-	}
+	_ = "STUB: not implemented"
+	return *new(InterceptorOption)
 }
 
-// WithStatsInterceptorOptions sets options for the stats interceptor.
 func WithStatsInterceptorOptions(opts ...stats.Option) InterceptorOption {
-	return func(o *interceptorOptions) {
-		o.statsOptions = opts
-	}
+	_ = "STUB: not implemented"
+	return *new(InterceptorOption)
 }
 
-// WithTWCCOptions sets options for the TWCC interceptor.
 func WithTWCCOptions(opts ...twcc.Option) InterceptorOption {
-	return func(o *interceptorOptions) {
-		o.twccOptions = opts
-	}
+	_ = "STUB: not implemented"
+	return *new(InterceptorOption)
 }
